@@ -18,7 +18,7 @@ from telethon.tl.types import (
 
 from app.db.crud.keyboards import KeyboardButtonCRUD
 from app.services.keyboard_glass import GLASS_FALLBACK_STYLE
-from app.utils.text.glass import glass_text
+from app.utils.text.glass import glass_text, unglass_text
 
 
 def create_button(text):
@@ -168,7 +168,7 @@ async def _get_keyboard_button_config(
     glass: bool = False,
 ) -> tuple[str, KeyboardButtonStyle | None]:
     button = await keyboard_crud.get_button(key)
-    text = button.button_text if button and button.button_text else default
+    text = unglass_text(button.button_text) if button and button.button_text else default
     clear_default_style = button is not None and button.button_style == ""
     style = None if clear_default_style else button.button_style if button and button.button_style else default_style
     if glass and not style:
