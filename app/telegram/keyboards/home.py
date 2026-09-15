@@ -8,6 +8,7 @@ from app.db.crud.panels import PanelsManager
 from app.db.crud.settings import SettingsManager
 from app.db.crud.user import UserCRUD
 from app.db.models.settings import DEFAULT_HOME_MENU_SETTINGS
+from app.services.keyboard_glass import glass_mode_active
 from app.services.panels.settings import panel_reseller_sale_enabled, panel_shop_sale_enabled
 from app.services.panels.trials import trial_offered
 from config import ADMIN_ID, DISABLE_UPTIME_BUTTONS, LINK_UPTIME_BUTTONS, WEBAPP_URL
@@ -107,6 +108,8 @@ def _layout_rows(layout: dict[str, tuple[int, int]]) -> list[tuple[str, ...]]:
 
 async def bhome_buttons(user_id, lang):
     keyboard_crud = KeyboardButtonCRUD()
+    setting = await SettingsManager().get_settings()
+    glass = glass_mode_active(setting)
 
     menu_my_services, menu_my_services_style = await _get_keyboard_button_config(
         keyboard_crud,
@@ -114,9 +117,10 @@ async def bhome_buttons(user_id, lang):
         "🔑 سرویس های من",
         default_style="primary",
         default_icon=5895443668663275064,
+        glass=glass,
     )
     menu_get_trial, menu_get_trial_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_get_trial", "🎁 دریافت تست"
+        keyboard_crud, "bt.menu_get_trial", "🎁 دریافت تست", glass=glass
     )
     menu_buy_service, menu_buy_service_style = await _get_keyboard_button_config(
         keyboard_crud,
@@ -124,44 +128,42 @@ async def bhome_buttons(user_id, lang):
         "🛍 خرید سرویس",
         default_style="success",
         default_icon=5373052667671093676,
+        glass=glass,
     )
 
     menu_profile, menu_profile_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_profile", "🙍 پروفایل من"
+        keyboard_crud, "bt.menu_profile", "🙍 پروفایل من", glass=glass
     )
     menu_add_balance, menu_add_balance_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_add_balance", "💰 افزایش موجودی"
+        keyboard_crud, "bt.menu_add_balance", "💰 افزایش موجودی", glass=glass
     )
 
-    menu_support, menu_support_style = await _get_keyboard_button_config(keyboard_crud, "bt.menu_support", "☎️ پشتیبانی")
-    menu_uptime, menu_uptime_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_uptime", "🔋 وضعیت سرویس ها"
+    menu_support, menu_support_style = await _get_keyboard_button_config(
+        keyboard_crud, "bt.menu_support", "☎️ پشتیبانی", glass=glass
     )
-    menu_help, menu_help_style = await _get_keyboard_button_config(keyboard_crud, "bt.menu_help", "📚 راهنما")
+    menu_uptime, menu_uptime_style = await _get_keyboard_button_config(
+        keyboard_crud, "bt.menu_uptime", "🔋 وضعیت سرویس ها", glass=glass
+    )
+    menu_help, menu_help_style = await _get_keyboard_button_config(
+        keyboard_crud, "bt.menu_help", "📚 راهنما", glass=glass
+    )
     menu_advanced_settings, menu_advanced_settings_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_advanced_settings", "⚙️ تنظیمات پیشرفته"
+        keyboard_crud, "bt.menu_advanced_settings", "⚙️ تنظیمات پیشرفته", glass=glass
     )
 
     menu_admin_panel, menu_admin_panel_style = await _get_keyboard_button_config(
-        keyboard_crud, "bt.menu_admin_panel", "⚙️ پنل مدیریت"
+        keyboard_crud, "bt.menu_admin_panel", "⚙️ پنل مدیریت", glass=glass
     )
     menu_buy_reseller, menu_buy_reseller_style = await _get_keyboard_button_config(
-        keyboard_crud,
-        "bt.menu_buy_reseller",
-        "🏢 خرید پنل نمایندگی",
-        default_style="success",
+        keyboard_crud, "bt.menu_buy_reseller", "🏢 خرید پنل نمایندگی", default_style="success", glass=glass
     )
     menu_my_resellers, menu_my_resellers_style = await _get_keyboard_button_config(
-        keyboard_crud,
-        "bt.menu_my_resellers",
-        "📋 نمایندگی‌های من",
-        default_style="primary",
+        keyboard_crud, "bt.menu_my_resellers", "📋 نمایندگی‌های من", default_style="primary", glass=glass
     )
 
-    setting = await SettingsManager().get_settings()
     if miniapp_only_active(setting):
         menu_miniapp, menu_miniapp_style = await _get_keyboard_button_config(
-            keyboard_crud, "bt.menu_miniapp", "🚀 ورود به اپلیکیشن", default_style="primary"
+            keyboard_crud, "bt.menu_miniapp", "🚀 ورود به اپلیکیشن", default_style="primary", glass=glass
         )
         # A plain button, not a web-view one: Telegram opens a keyboard-button
         # web app "without sending user information" (keyboardButtonSimpleWebView),
@@ -171,7 +173,7 @@ async def bhome_buttons(user_id, lang):
         rows = [[styled_reply_button(menu_miniapp, menu_miniapp_style)]]
         if user_id in ADMIN_ID:
             rows.append([styled_reply_button(menu_admin_panel, menu_admin_panel_style)])
-        return ReplyKeyboardMarkup([KeyboardButtonRow(row) for row in rows], resize=True)
+        return ReplyKeyboardMarkup([KeyboardButtonRow(row) for row in rows], resize=True, persistent=glass)
 
     user_data = await UserCRUD().read_user(user_id=user_id)
     conditions = await home_button_conditions()
@@ -204,4 +206,6 @@ async def bhome_buttons(user_id, lang):
         if row:
             bhome.append(row)
 
-    return ReplyKeyboardMarkup([KeyboardButtonRow(button) for button in bhome], resize=True)
+    # ``persistent`` is what keeps the keyboard open in the chat instead of
+    # collapsing behind the keyboard icon; the colours above do the rest.
+    return ReplyKeyboardMarkup([KeyboardButtonRow(button) for button in bhome], resize=True, persistent=glass)

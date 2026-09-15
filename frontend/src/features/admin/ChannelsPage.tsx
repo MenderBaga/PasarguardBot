@@ -15,6 +15,8 @@ const logTypeLabels = (t: TFunction): Record<string, string> => ({
   crypto: t("panel.common.cryptoPayment"),
   stars: t("panel.channels.reportStars"),
   purchase: t("panel.channels.reportPurchase"),
+  renew: t("panel.channels.reportRenew"),
+  trial: t("panel.channels.reportTrial"),
   other: t("panel.channels.reportOther"),
   backup: t("panel.channels.reportBackup"),
   panel_update: t("panel.channels.reportPanelUpdate"),
